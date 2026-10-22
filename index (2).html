@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Library Book Reservation System</title><link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar"><h1>Library Book Reservation System</h1><nav><a href="#home">Home</a><a href="#books">Books</a><a href="#manage">Manage Books</a><a href="#queue">Waiting Queue</a></nav></header>
+<section class="hero" id="home"><div><p class="eyebrow">SMART LIBRARY • SIMPLE RESERVATIONS</p><h2>Every book has a story.<br><span>Find your next one.</span></h2><p>Search books, issue available titles, and reserve books that are currently borrowed.</p><a class="hero-btn" href="#books">Explore the library</a></div><div class="art" aria-hidden="true"><div class="books"><i></i><i></i><i></i><i></i></div><b>✦</b></div></section>
+<main class="page">
+<section class="stats"><article><strong id="total-count">3</strong><span>Total books</span></article><article><strong id="available-count">3</strong><span>Available now</span></article><article><strong id="waiting-count">0</strong><span>Students waiting</span></article></section>
+<section class="section" id="books"><p class="eyebrow">OUR COLLECTION</p><h2>Explore the books</h2><p class="muted">Search by book title, author, or ID.</p><div class="tools"><input id="search" type="search" placeholder="Search books..." aria-label="Search books"><select id="filter"><option value="all">All books</option><option value="available">Available</option><option value="issued">Currently issued</option></select></div><div class="book-grid" id="book-list"></div></section>
+<section class="section" id="manage"><p class="eyebrow">LIBRARY DESK</p><h2>Manage a book</h2><p class="muted">Add a title or perform an issue, return, or reservation.</p><div class="manage-grid">
+<form class="panel" id="add-form"><h3>Add a new book</h3><label for="book-id">Book ID</label><input id="book-id" type="number" min="1" required placeholder="e.g. 104"><label for="book-title">Book title</label><input id="book-title" required placeholder="Enter book title"><label for="book-author">Author name</label><input id="book-author" required placeholder="Enter author name"><button class="primary full" type="submit">Add book</button></form>
+<section class="panel"><h3>Issue or reserve</h3><label for="action-book">Select book</label><select id="action-book"></select><label for="student-name">Student name</label><input id="student-name" placeholder="Enter student name"><div class="actions"><button class="primary" id="issue-btn" type="button">Issue book</button><button class="secondary" id="reserve-btn" type="button">Reserve</button><button class="light" id="return-btn" type="button">Return</button></div><p id="message" class="message" role="status">Choose a book to get started.</p></section>
+</div></section>
+<section class="section" id="queue"><p class="eyebrow">FIRST IN, FIRST OUT</p><h2>Waiting queue</h2><p class="muted">The first student to reserve a book gets priority when it is returned.</p><div class="queue-panel" id="queue-list"></div></section>
+<section class="java-note"><h3>Built with Java data structures</h3><p>The Java console application uses arrays for book records and a FIFO Queue for reservations. See <strong>LibrarySystem.java</strong> in the project files.</p></section>
+</main><footer><strong>Library Book Reservation System</strong><span>Java • Arrays • FIFO Queue</span></footer>
+<script>
+const books=[
+{id:101,title:"Java Programming",author:"Herbert Schildt",issuedTo:"",queue:[]},
+{id:102,title:"Data Structures",author:"Seymour Lipschutz",issuedTo:"",queue:[]},
+{id:103,title:"Computer Networks",author:"Andrew S. Tanenbaum",issuedTo:"",queue:[]}
+];
+const $=id=>document.getElementById(id), free=b=>!b.issuedTo;
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const msg=(s,error=false)=>{$("message").textContent=s;$("message").className=error?"message error":"message"};
+const chosen=()=>books.find(b=>b.id===Number($("action-book").value));
+function render(){
+ const q=$("search").value.trim().toLowerCase(), f=$("filter").value;
+ const shown=books.filter(b=>`${b.id} ${b.title} ${b.author}`.toLowerCase().includes(q)&&(f==="all"||(f==="available"?free(b):!free(b))));
+ $("total-count").textContent=books.length;$("available-count").textContent=books.filter(free).length;$("waiting-count").textContent=books.reduce((n,b)=>n+b.queue.length,0);
+ $("book-list").innerHTML=shown.length?shown.map(b=>`<article class="book-card"><div class="cover ${b.id%3===0?"three":b.id%2===0?"two":""}"><small>THE LIBRARY</small><strong>${esc(b.title)}</strong><span>${esc(b.author)}</span></div><div class="details"><small>ID ${b.id} <span class="status ${free(b)?"available":"issued"}">${free(b)?"Available":"Issued"}</span></small><h3>${esc(b.title)}</h3><p class="muted">by ${esc(b.author)}</p><p class="muted">${b.queue.length} student(s) waiting</p><button class="link-btn" data-id="${b.id}">Manage this book ↗</button></div></article>`).join(""):'<p class="empty">No books match your search.</p>';
+ $("action-book").innerHTML=books.map(b=>`<option value="${b.id}">${b.id} — ${esc(b.title)}</option>`).join("");
+ $("queue-list").innerHTML=books.map(b=>`<div class="queue-row"><div><strong>${esc(b.title)}</strong><small>Book ID ${b.id}</small></div><div class="chips">${b.queue.length?b.queue.map((n,i)=>`<span>${i+1}. ${esc(n)}</span>`).join(""):'<em>No students waiting</em>'}</div></div>`).join("");
+ document.querySelectorAll("[data-id]").forEach(btn=>btn.onclick=()=>{$("action-book").value=btn.dataset.id;$("manage").scrollIntoView({behavior:"smooth"})});
+}
+$("add-form").addEventListener("submit",e=>{e.preventDefault();let id=Number($("book-id").value);if(books.some(b=>b.id===id))return msg("That book ID already exists.",true);books.push({id,title:$("book-title").value.trim(),author:$("book-author").value.trim(),issuedTo:"",queue:[]});e.target.reset();render();msg("Book added successfully.")});
+$("search").addEventListener("input",render);$("filter").addEventListener("change",render);
+$("issue-btn").onclick=()=>{let b=chosen(),n=$("student-name").value.trim();if(!b||!n)return msg("Select a book and enter the student's name.",true);if(!free(b))return msg("Already issued. Reserve it instead.",true);if(b.queue.length)return msg("Waiting students have priority.",true);b.issuedTo=n;render();msg("Book issued to "+n+".")};
+$("reserve-btn").onclick=()=>{let b=chosen(),n=$("student-name").value.trim();if(!b||!n)return msg("Select a book and enter the student's name.",true);if(free(b)&&!b.queue.length)return msg("Book is available. Issue it directly.",true);if(b.issuedTo.toLowerCase()===n.toLowerCase()||b.queue.some(x=>x.toLowerCase()===n.toLowerCase()))return msg("Student already has this book or is waiting.",true);b.queue.push(n);let p=b.queue.length;render();msg("Reservation added. Queue position: "+p)};
+$("return-btn").onclick=()=>{let b=chosen();if(!b)return msg("Select a book first.",true);if(free(b))return msg("This book is not currently issued.",true);let old=b.issuedTo;b.issuedTo="";if(b.queue.length){b.issuedTo=b.queue.shift();render();msg("Returned by "+old+". FIFO queue served: issued to "+b.issuedTo+".")}else{render();msg("Book returned. It is now available.")}};
+render();
+</script></body></html>
